@@ -1,0 +1,50 @@
+version: '3.9'
+
+volumes:
+  postgres_data: {}
+
+networks:
+  keycloak-net:
+    driver: bridge
+
+services:
+
+  ##########################################
+  # Postgres: The database used by Keycloak
+  ##########################################
+  keycloak-database:
+    image: postgres:${POSTGRES_TAG}
+    container_name: keycloak-database
+    volumes:
+      - postgres_data:${POSTGRES_TARGET_DATA_VOLUME}
+    restart: always
+    networks:
+      - keycloak-net
+    environment:
+      POSTGRES_DB: ${KC_DB_NAME}
+      POSTGRES_USER: ${KC_DB_USERNAME}      
+      POSTGRES_PASSWORD: ${KC_DB_PASSWORD}
+    ports:
+      - $POSTGRES_PORT:5432
+
+  #######################################
+  # Keycloak: The IAM
+  #######################################
+  keycloak:
+    image: jboss/keycloak
+    container_name: keycloak
+    environment:
+      DB_VENDOR: ${KC_DATABASE}
+      DB_ADDR: ${KC_DB_HOST}
+      DB_DATABASE: ${KC_DB_NAME}
+      DB_USER: ${KC_DB_USERNAME}
+      DB_PASSWORD: ${KC_DB_PASSWORD}
+      KEYCLOAK_USER: ${KC_USER}
+      KEYCLOAK_PASSWORD: ${KC_PASSWORD}
+      PROXY_ADDRESS_FORWARDING: ${PROXY_ADDRESS_FORWARDING}
+    networks:
+      - keycloak-net
+    ports:
+      - 8080:8080
+    depends_on:
+      - keycloak-database
